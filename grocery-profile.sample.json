@@ -1,0 +1,136 @@
+{
+  "user": "sample_user",
+  "store": {
+    "name": "Amazon Now Egypt",
+    "base_url": "https://www.amazon.eg/-/en/tez/browse?qcbrand=sAuWWBROaG&ref_=nav_cs_yalla",
+    "country_code": "EG",
+    "currency": "EGP"
+  },
+  "addresses": {
+    "primary": {
+      "name": "Home Address",
+      "identifier": "Primary Residence"
+    },
+    "secondary": {
+      "name": "Secondary Address",
+      "identifier": "Family House"
+    }
+  },
+  "rules": {
+    "require_address_selection": true,
+    "notify_promotions_and_thresholds": true,
+    "free_delivery_min_spend_egp": 150.0,
+    "prefer_cheapest_effective_price": true,
+    "human_checkout_only": true
+  },
+  "items": {
+    "milk": {
+      "generic_keywords": ["milk", "bottle of milk", "bottles of milk", "pack of milk", "carton of milk", "laban"],
+      "default_frequency": "weekly",
+      "primary": {
+        "brand": "Lamar",
+        "product_name": "Lamar Full Fat Milk",
+        "pack_type": "Pack",
+        "size": "1L",
+        "price": "50.35 EGP",
+        "asin": "B07DWF8YRJ",
+        "search_term": "Lamar Milk 1 Litre"
+      },
+      "alternates": [
+        {
+          "brand": "Almarai",
+          "product_name": "Almarai Plain Milk",
+          "pack_type": "Pack",
+          "size": "1L",
+          "price": "49.00 EGP",
+          "asin": "B08WJL9W3H",
+          "search_term": "Almarai Plain Milk 1 Litre"
+        },
+        {
+          "brand": "Dina Farms",
+          "product_name": "Dina Farms Fresh Milk",
+          "pack_type": "Bottle",
+          "size": "850ml",
+          "price": "54.50 EGP",
+          "asin": "B071FFRYCP",
+          "search_term": "Dina Farms Fresh Milk 850ml"
+        }
+      ]
+    },
+    "rice": {
+      "generic_keywords": ["rice", "bag of rice", "roz", "ruz"],
+      "default_frequency": "bi-weekly",
+      "primary": {
+        "brand": "Al Doha",
+        "product_name": "Al Doha Egyptian Rice",
+        "pack_type": "Bag",
+        "size": "1kg",
+        "price": "43.00 EGP",
+        "asin": "B00FFE8TDG",
+        "search_term": "Al Doha Egyptian Rice 1kg"
+      },
+      "alternates": [
+        {
+          "brand": "AL SA`A",
+          "product_name": "AL SA`A Egyptian White Rice",
+          "pack_type": "Bag",
+          "size": "1kg",
+          "price": "33.59 EGP",
+          "search_term": "AL SA`A Egyptian White Rice 1kg"
+        }
+      ]
+    },
+    "sugar": {
+      "generic_keywords": ["sugar", "bag of sugar", "sukkar"],
+      "default_frequency": "monthly",
+      "primary": {
+        "brand": "Al Doha",
+        "product_name": "Aldoha White Sugar",
+        "pack_type": "Bag",
+        "size": "1kg",
+        "price": "35.69 EGP",
+        "asin": "B00UEMFGJO",
+        "search_term": "Aldoha White Sugar 1kg"
+      }
+    },
+    "eggs": {
+      "generic_keywords": ["eggs", "egg", "pack of eggs", "bayd"],
+      "default_frequency": "weekly",
+      "primary": {
+        "brand": "Big Egg",
+        "product_name": "Big Egg White Egg 30-Piece Carton",
+        "pack_type": "Carton",
+        "size": "30-Piece",
+        "price": "180.25 EGP",
+        "asin": "B0G3R4XF1Y",
+        "search_term": "Big Egg White Egg 30-Piece Carton"
+      }
+    },
+    "tea": {
+      "generic_keywords": ["tea", "shay"],
+      "default_frequency": "monthly",
+      "primary": {
+        "brand": "El Arosa",
+        "product_name": "El Arosa Teabags",
+        "pack_type": "Box",
+        "size": "50 Teabags",
+        "price": "48.77 EGP",
+        "search_term": "El Arosa Teabags 50 Teabags"
+      }
+    }
+  },
+  "order_history": [
+    {
+      "date": "2026-11-01",
+      "items": [
+        {
+          "item": "milk",
+          "brand": "Lamar",
+          "size": "1L",
+          "quantity": 2,
+          "status": "delivered"
+        }
+      ]
+    }
+  ]
+}

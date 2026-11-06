@@ -1,0 +1,8 @@
+{
+  "name": "amazon-grocery-shopper-mcp",
+  "version": "1.0.0",
+  "description": "Personalized Amazon Egypt Now Grocery Purchasing MCP Server",
+  "main": "server.py",
+  "author": "Mohamed Samy",
+  "license": "MIT"
+}
