@@ -32,22 +32,22 @@ def stage_items_in_active_session(queries):
     # Check that main Chrome window is available
     script = f'''
     tell application "Google Chrome"
-        set found_tab to missing value
         tell front window
-            repeat with t in tabs
-                if URL of t contains "tez/browse" or URL of t contains "amazon.eg" then
-                    set found_tab to t
+            set target_tab_index to missing value
+            repeat with i from 1 to (count of tabs)
+                set t_url to URL of tab i
+                if t_url contains "tez/browse" or t_url contains "amazon.eg" then
+                    set target_tab_index to i
                     exit repeat
                 end if
             end repeat
             
-            if found_tab is missing value then
+            if target_tab_index is missing value then
                 make new tab at end of tabs with properties {{URL:"{STORE_URL}"}}
                 set active tab index to (count of tabs)
             else
-                -- Bring Amazon tab to active
-                set active tab index to (index of found_tab)
-                if URL of active tab does not contain "tez/browse" then
+                set active tab index to target_tab_index
+                if (URL of active tab) does not contain "tez/browse" then
                     set URL of active tab to "{STORE_URL}"
                 end if
             end if

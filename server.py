@@ -255,6 +255,67 @@ def tool_record_order_event(arguments: dict):
     _save_profile(profile)
     return {"status": "success", "recorded_entry": order_entry}
 
+def tool_set_delivery_address(arguments: dict):
+    """
+    Sets the active delivery address on Amazon Egypt in Chrome.
+    Address can be 'home' (Building 22) or 'mom' (Building 26).
+    """
+    address = arguments.get("address", "").strip().lower()
+    if address not in ["home", "mom", "22", "26"]:
+        return {
+            "status": "error",
+            "message": "Invalid address. Must be 'home' (Building 22) or 'mom' (Building 26)."
+        }
+    
+    target_id = "22" if ("home" in address or "22" in address) else "26"
+    target_name = "My Home (Building 22)" if target_id == "22" else "Mom's House (Building 26)"
+    
+    # Automate Chrome to set the default address via Amazon Egypt addresses page
+    apple_script = f'''
+    tell application "Google Chrome"
+        tell front window
+            set newTab to make new tab with properties {{URL:"https://www.amazon.eg/a/addresses"}}
+            delay 2.5
+            set res to execute newTab javascript "
+                (function() {{
+                    let target = \\"{target_id}\\";
+                    let cards = Array.from(document.querySelectorAll('.a-box'));
+                    let targetCard = cards.find(c => c.innerText && (c.innerText.includes(target) || (target === '26' && c.innerText.includes('٢٦'))));
+                    if (!targetCard) return JSON.stringify({{status: 'card_not_found', target: target}});
+                    
+                    if (targetCard.innerText.includes('Default:')) {{
+                        return JSON.stringify({{status: 'already_default', address: \\"{target_name}\\"}});
+                    }}
+                    
+                    let buttons = Array.from(targetCard.querySelectorAll('a, button, input[type=submit]'));
+                    let defaultBtn = buttons.find(b => (b.innerText || b.value || '').includes('Set as Default') || (b.innerText || b.value || '').includes('افتراضي'));
+                    if (defaultBtn) {{
+                        defaultBtn.click();
+                        return JSON.stringify({{status: 'clicked_set_as_default', address: \\"{target_name}\\"}});
+                    }}
+                    return JSON.stringify({{status: 'button_not_found', card_text: targetCard.innerText.slice(0, 100)}});
+                }})()
+            "
+            delay 1.5
+            close newTab
+            return res
+        end tell
+    end tell
+    '''
+    import subprocess
+    proc = subprocess.run(["osascript", "-e", apple_script], capture_output=True, text=True)
+    raw_out = proc.stdout.strip()
+    try:
+        parsed = json.loads(raw_out)
+    except:
+        parsed = {"raw": raw_out}
+        
+    return {
+        "status": "success",
+        "selected_address": target_name,
+        "browser_action": parsed
+    }
+
 def tool_stage_in_cart(arguments: dict):
     """
     Directly stages an item into the user's active Google Chrome session on Amazon Egypt Now.
@@ -371,6 +432,21 @@ def tool_list_configured_staples(arguments: dict):
 
 TOOLS = [
     {
+        "name": "set_delivery_address",
+        "description": "Sets and updates the active delivery address on Amazon Egypt in Chrome. Supports 'home' (Building 22) or 'mom' (Building 26).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "Delivery address destination: 'home' (Building 22) or 'mom' (Building 26)",
+                    "enum": ["home", "mom", "22", "26"]
+                }
+            },
+            "required": ["address"]
+        }
+    },
+    {
         "name": "lookup_grocery_item",
         "description": "Maps generic grocery items (e.g., '2 bottles of milk', 'sugar', 'جبنة رومي') to specific configured brands, sizes, and packaging for Amazon Egypt Now.",
         "inputSchema": {
@@ -465,7 +541,9 @@ def handle_rpc(request: dict):
         arguments = params.get("arguments", {})
         
         try:
-            if tool_name == "lookup_grocery_item":
+            if tool_name == "set_delivery_address":
+                res = tool_set_delivery_address(arguments)
+            elif tool_name == "lookup_grocery_item":
                 res = tool_lookup_grocery_item(arguments)
             elif tool_name == "stage_in_cart":
                 res = tool_stage_in_cart(arguments)
