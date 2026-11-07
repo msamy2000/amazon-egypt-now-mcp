@@ -255,6 +255,89 @@ def tool_record_order_event(arguments: dict):
     _save_profile(profile)
     return {"status": "success", "recorded_entry": order_entry}
 
+def tool_stage_in_cart(arguments: dict):
+    """
+    Directly stages an item into the user's active Google Chrome session on Amazon Egypt Now.
+    """
+    query = arguments.get("query", "").strip()
+    quantity = arguments.get("quantity", 1)
+    
+    # 1. Resolve query first
+    lookup_res = tool_lookup_grocery_item({"query": query})
+    if lookup_res.get("status") != "resolved":
+        return {
+            "status": "error",
+            "message": f"Could not resolve '{query}' to a known product."
+        }
+        
+    primary = lookup_res["primary"]
+    brand = primary.get("brand", "")
+    prod_name = primary.get("product_name", "")
+    asin = primary.get("asin", "")
+    qty = quantity or lookup_res.get("quantity", 1)
+    
+    # 2. Drive the active Chrome browser via AppleScript
+    apple_script = f'''
+    tell application "Google Chrome"
+        tell front window
+            execute active tab javascript "
+                (function() {{
+                    let brand = \\"{brand}\\".toLowerCase();
+                    let prodName = \\"{prod_name}\\".toLowerCase();
+                    let asin = \\"{asin}\\";
+                    let targetQty = {qty};
+                    
+                    let all = Array.from(document.querySelectorAll(\\"*\\"));
+                    let match = all.find(el => el.children.length === 0 && el.innerText && 
+                        (el.innerText.toLowerCase().includes(brand) || el.innerText.toLowerCase().includes(prodName)));
+                        
+                    if (!match) {{
+                        return JSON.stringify({{status: \\"not_found_on_screen\\", item: \\"{brand} {prod_name}\\"}});
+                    }}
+                    
+                    let card = match;
+                    while (card && card.parentElement && !card.innerText.includes(\\"EGP\\")) {{
+                        card = card.parentElement;
+                    }}
+                    
+                    let stepper = card.querySelector(\\"[aria-label='Quantity stepper']\\");
+                    if (stepper) {{
+                        let incBtn = card.querySelector(\\"button[aria-label='Increase quantity']\\");
+                        if (incBtn) {{
+                            incBtn.click();
+                            return JSON.stringify({{status: \\"incremented\\", item: \\"{brand} {prod_name}\\"}});
+                        }}
+                    }}
+                    
+                    let addBtn = card.querySelector(\\"button, [role='button']\\");
+                    if (addBtn) {{
+                        addBtn.click();
+                        return JSON.stringify({{status: \\"added\\", item: \\"{brand} {prod_name}\\"}});
+                    }}
+                    
+                    return JSON.stringify({{status: \\"no_button\\", item: \\"{brand} {prod_name}\\"}});
+                }})()
+            "
+        end tell
+    end tell
+    '''
+    
+    import subprocess
+    proc = subprocess.run(["osascript", "-e", apple_script], capture_output=True, text=True)
+    raw_out = proc.stdout.strip()
+    
+    try:
+        parsed = json.loads(raw_out)
+    except:
+        parsed = {"raw": raw_out}
+        
+    return {
+        "status": "success",
+        "action": "staged_in_cart",
+        "resolved_product": f"{qty}x {brand} {prod_name}",
+        "browser_execution": parsed
+    }
+
 def tool_list_configured_staples(arguments: dict):
     profile = _load_profile()
     staples = {}
@@ -269,11 +352,23 @@ def tool_list_configured_staples(arguments: dict):
 TOOLS = [
     {
         "name": "lookup_grocery_item",
-        "description": "Maps generic grocery items (e.g., '2 bottles of milk', 'sugar') to specific configured brands, sizes, and packaging for Amazon Egypt Now.",
+        "description": "Maps generic grocery items (e.g., '2 bottles of milk', 'sugar', 'جبنة رومي') to specific configured brands, sizes, and packaging for Amazon Egypt Now.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "User grocery request, e.g. '2 bottles of milk'"}
+                "query": {"type": "string", "description": "User grocery request, e.g. '2 bottles of milk' or 'sugar'"}
+            },
+            "required": ["query"]
+        }
+    },
+    {
+        "name": "stage_in_cart",
+        "description": "Directly drives the user's active Google Chrome session to click 'Add to Cart' or increment quantity for the resolved item on Amazon Egypt Now.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Grocery item name in English or Arabic, e.g. 'sugar', 'milk', 'جبنة رومي'"},
+                "quantity": {"type": "integer", "description": "Quantity to add", "default": 1}
             },
             "required": ["query"]
         }
@@ -351,6 +446,8 @@ def handle_rpc(request: dict):
         try:
             if tool_name == "lookup_grocery_item":
                 res = tool_lookup_grocery_item(arguments)
+            elif tool_name == "stage_in_cart":
+                res = tool_stage_in_cart(arguments)
             elif tool_name == "check_substitutions":
                 res = tool_check_substitutions(arguments)
             elif tool_name == "record_order_event":
