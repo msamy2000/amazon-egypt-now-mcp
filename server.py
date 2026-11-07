@@ -375,57 +375,66 @@ def tool_stage_in_cart(arguments: dict):
     
     selected_addr = "Mom's House (Building 26)" if ("mom" in address or "26" in address) else "My Home (Building 22)"
     
-    # 2. Drive the active Chrome browser via AppleScript
+    # 2. Drive Google Chrome via AppleScript across all windows to find the Amazon Now tab
     apple_script = f'''
     tell application "Google Chrome"
-        tell front window
-            execute active tab javascript "
-                (function() {{
-                    let brand = \\"{brand}\\".toLowerCase().trim();
-                    let prodName = \\"{prod_name}\\".toLowerCase().trim();
-                    let asin = \\"{asin}\\";
-                    let targetQty = {qty};
-                    
-                    let all = Array.from(document.querySelectorAll(\\"*\\"));
-                    let match = all.find(el => {{
-                        if (el.children.length > 0 || !el.innerText) return false;
-                        let text = el.innerText.toLowerCase().trim();
-                        if (text.length < 3) return false;
-                        if (brand && text.includes(brand)) return true;
-                        if (prodName && text.includes(prodName)) return true;
-                        let prodWords = prodName.split(' ').filter(w => w.length > 3);
-                        if (prodWords.length > 0 && prodWords.every(w => text.includes(w))) return true;
-                        return false;
-                    }});
-                        
-                    if (!match) {{
-                        return JSON.stringify({{status: \\"not_found_on_screen\\", item: \\"{brand} {prod_name}\\"}});
-                    }}
-                    
-                    let card = match;
-                    while (card && card.parentElement && !card.innerText.includes(\\"EGP\\")) {{
-                        card = card.parentElement;
-                    }}
-                    
-                    let stepper = card.querySelector(\\"[aria-label='Quantity stepper']\\");
-                    if (stepper) {{
-                        let incBtn = card.querySelector(\\"button[aria-label='Increase quantity']\\");
-                        if (incBtn) {{
-                            incBtn.click();
-                            return JSON.stringify({{status: \\"incremented\\", item: \\"{brand} {prod_name}\\"}});
-                        }}
-                    }}
-                    
-                    let addBtn = card.querySelector(\\"button, [role='button']\\");
-                    if (addBtn) {{
-                        addBtn.click();
-                        return JSON.stringify({{status: \\"added\\", item: \\"{brand} {prod_name}\\"}});
-                    }}
-                    
-                    return JSON.stringify({{status: \\"no_button\\", item: \\"{brand} {prod_name}\\"}});
-                }})()
-            "
-        end tell
+        set windowList to every window
+        repeat with w in windowList
+            repeat with t in every tab of w
+                if (URL of t) contains "amazon.eg" then
+                    tell t
+                        set res to execute javascript "
+                            (function() {{
+                                let brand = \\"{brand}\\".toLowerCase().trim();
+                                let prodName = \\"{prod_name}\\".toLowerCase().trim();
+                                let asin = \\"{asin}\\";
+                                let targetQty = {qty};
+                                
+                                let all = Array.from(document.querySelectorAll(\\"*\\"));
+                                let match = all.find(el => {{
+                                    if (el.children.length > 0 || !el.innerText) return false;
+                                    let text = el.innerText.toLowerCase().trim();
+                                    if (text.length < 3) return false;
+                                    if (brand && text.includes(brand)) return true;
+                                    if (prodName && text.includes(prodName)) return true;
+                                    let prodWords = prodName.split(' ').filter(w => w.length > 3);
+                                    if (prodWords.length > 0 && prodWords.every(w => text.includes(w))) return true;
+                                    return false;
+                                }});
+                                    
+                                if (!match) {{
+                                    return JSON.stringify({{status: \\"not_found_on_screen\\", item: \\"{brand} {prod_name}\\"}});
+                                }}
+                                
+                                let card = match;
+                                while (card && card.parentElement && !card.innerText.includes(\\"EGP\\")) {{
+                                    card = card.parentElement;
+                                }}
+                                
+                                let stepper = card.querySelector(\\"[aria-label='Quantity stepper']\\");
+                                if (stepper) {{
+                                    let incBtn = card.querySelector(\\"button[aria-label='Increase quantity']\\");
+                                    if (incBtn) {{
+                                        incBtn.click();
+                                        return JSON.stringify({{status: \\"incremented\\", item: \\"{brand} {prod_name}\\"}});
+                                    }}
+                                }}
+                                
+                                let addBtn = card.querySelector(\\"button, [role='button']\\");
+                                if (addBtn) {{
+                                    addBtn.click();
+                                    return JSON.stringify({{status: \\"added\\", item: \\"{brand} {prod_name}\\"}});
+                                }}
+                                
+                                return JSON.stringify({{status: \\"no_button\\", item: \\"{brand} {prod_name}\\"}});
+                            }})()
+                        "
+                        return res
+                    end tell
+                end if
+            end repeat
+        end repeat
+        return "{\\"status\\": \\"no_amazon_tab\\"}"
     end tell
     '''
     
@@ -438,12 +447,16 @@ def tool_stage_in_cart(arguments: dict):
     except:
         parsed = {"raw": raw_out}
         
+    execution_status = parsed.get("status") if isinstance(parsed, dict) else "unknown"
+    is_success = execution_status in ["added", "incremented"]
+    
     return {
-        "status": "success",
-        "action": "staged_in_cart",
+        "status": "success" if is_success else "failed",
+        "action": "staged_in_cart" if is_success else "staging_failed",
         "delivery_address": selected_addr,
         "resolved_product": f"{qty}x {brand} {prod_name}",
-        "browser_execution": parsed
+        "browser_execution": parsed,
+        "message": f"Successfully added {brand} {prod_name} to cart" if is_success else f"Failed to add {brand} {prod_name}: {execution_status}"
     }
 
 def tool_list_configured_staples(arguments: dict):
