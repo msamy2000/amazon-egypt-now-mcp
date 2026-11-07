@@ -457,7 +457,58 @@ def tool_list_configured_staples(arguments: dict):
         }
     return staples
 
+def tool_view_cart(arguments: dict = None):
+    """
+    Reads the live contents and total of the user's Amazon Egypt Now cart directly from Google Chrome.
+    """
+    apple_script = '''
+    tell application "Google Chrome"
+        set windowList to every window
+        repeat with w in windowList
+            repeat with t in every tab of w
+                if (URL of t) contains "amazon.eg" then
+                    tell t
+                        set res to execute javascript "
+                            (function() {
+                                let btn = document.querySelector(\\"button[aria-label='Open bottomsheet with live cart details']\\");
+                                let summary = btn ? btn.innerText.replace(/\\\\n/g, ' ').trim() : 'Cart button not found';
+                                
+                                // Look for items in the DOM or sheet
+                                let allDivs = Array.from(document.querySelectorAll('div, p, span'));
+                                let itemCards = Array.from(document.querySelectorAll(\\"[class*='cart'], [class*='bottomsheet'], [role='dialog']\\"));
+                                
+                                return JSON.stringify({
+                                    summary: summary,
+                                    status: 'ok'
+                                });
+                            })()
+                        "
+                        return res
+                    end tell
+                end if
+            end repeat
+        end repeat
+        return "{\\"error\\": \\"No active Amazon Egypt tab found in Chrome\\"}"
+    end tell
+    '''
+    import subprocess
+    proc = subprocess.run(["osascript", "-e", apple_script], capture_output=True, text=True)
+    raw = proc.stdout.strip()
+    try:
+        parsed = json.loads(raw)
+    except:
+        parsed = {"raw": raw}
+    return parsed
+
 TOOLS = [
+    {
+        "name": "view_cart",
+        "description": "Reads the live cart summary and item count directly from the user's active Amazon Egypt Now tab in Chrome.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {}
+        }
+    },
     {
         "name": "set_delivery_address",
         "description": "Sets and updates the active delivery address on Amazon Egypt in Chrome. Supports 'home' (Building 22) or 'mom' (Building 26).",
@@ -568,7 +619,9 @@ def handle_rpc(request: dict):
         arguments = params.get("arguments", {})
         
         try:
-            if tool_name == "set_delivery_address":
+            if tool_name == "view_cart":
+                res = tool_view_cart(arguments)
+            elif tool_name == "set_delivery_address":
                 res = tool_set_delivery_address(arguments)
             elif tool_name == "lookup_grocery_item":
                 res = tool_lookup_grocery_item(arguments)
