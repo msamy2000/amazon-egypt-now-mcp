@@ -69,6 +69,9 @@ Whenever the user specifies a generic item (e.g. "milk", "rice", "sugar"), **alw
   - **Teabags**: `El Arosa Teabags` — **50 Teabags Box** (EGP ~48.77)
   - **Loose / Strong**: `Rabea Extra Strong Tea` (EGP ~62.99)
   - **Alternate**: `Lipton Yellow Label Black Teabag` — **25 Teabags**
+- **Coffee**:
+  - **Instant Coffee**: `Nescafe Classic Instant Coffee` — **200g Jar** (EGP ~185.00)
+  - **Alternate**: `Nescafe Gold Instant Coffee` — **100g Jar** (EGP ~170.00)
 - **Tomato Paste**:
   - `Harvest Tomato Paste` — **320g Jar** (EGP ~28.73)
 - **Fish / Canned Goods**:

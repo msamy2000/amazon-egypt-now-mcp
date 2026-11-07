@@ -25,7 +25,14 @@
   },
   "items": {
     "milk": {
-      "generic_keywords": ["milk", "bottle of milk", "bottles of milk", "pack of milk", "carton of milk", "laban"],
+      "generic_keywords": [
+        "milk",
+        "bottle of milk",
+        "bottles of milk",
+        "pack of milk",
+        "carton of milk",
+        "laban"
+      ],
       "default_frequency": "weekly",
       "primary": {
         "brand": "Lamar",
@@ -58,7 +65,12 @@
       ]
     },
     "rice": {
-      "generic_keywords": ["rice", "bag of rice", "roz", "ruz"],
+      "generic_keywords": [
+        "rice",
+        "bag of rice",
+        "roz",
+        "ruz"
+      ],
       "default_frequency": "bi-weekly",
       "primary": {
         "brand": "Al Doha",
@@ -81,7 +93,11 @@
       ]
     },
     "sugar": {
-      "generic_keywords": ["sugar", "bag of sugar", "sukkar"],
+      "generic_keywords": [
+        "sugar",
+        "bag of sugar",
+        "sukkar"
+      ],
       "default_frequency": "monthly",
       "primary": {
         "brand": "Al Doha",
@@ -94,7 +110,12 @@
       }
     },
     "eggs": {
-      "generic_keywords": ["eggs", "egg", "pack of eggs", "bayd"],
+      "generic_keywords": [
+        "eggs",
+        "egg",
+        "pack of eggs",
+        "bayd"
+      ],
       "default_frequency": "weekly",
       "primary": {
         "brand": "Big Egg",
@@ -107,7 +128,10 @@
       }
     },
     "tea": {
-      "generic_keywords": ["tea", "shay"],
+      "generic_keywords": [
+        "tea",
+        "shay"
+      ],
       "default_frequency": "monthly",
       "primary": {
         "brand": "El Arosa",
@@ -117,6 +141,35 @@
         "price": "48.77 EGP",
         "search_term": "El Arosa Teabags 50 Teabags"
       }
+    },
+    "coffee": {
+      "generic_keywords": [
+        "coffee",
+        "nescafe",
+        "instant coffee",
+        "nescafe gold",
+        "قهوة",
+        "نسكافيه",
+        "بن"
+      ],
+      "default_frequency": "monthly",
+      "primary": {
+        "brand": "Nescafe",
+        "product_name": "Nescafe Classic Instant Coffee",
+        "pack_type": "Jar",
+        "size": "200g",
+        "price": "185.00 EGP",
+        "search_term": "Nescafe Classic Instant Coffee 200g"
+      },
+      "alternates": [
+        {
+          "brand": "Nescafe",
+          "product_name": "Nescafe Gold Instant Coffee",
+          "size": "100g",
+          "price": "170.00 EGP",
+          "search_term": "Nescafe Gold 100g"
+        }
+      ]
     }
   },
   "order_history": [

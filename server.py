@@ -106,7 +106,24 @@ ARABIC_SEMANTIC_SYNONYMS = {
     "زيت ذرة": "oil",
     "زيت ذره": "oil",
     "zayt": "oil",
-    "zeit": "oil"
+    "zeit": "oil",
+    
+    "قهوة": "coffee",
+    "قهوه": "coffee",
+    "نسكافيه": "coffee",
+    "بن": "coffee",
+    "nescafe": "coffee",
+    "coffee": "coffee",
+    "qahwa": "coffee",
+    "ahwa": "coffee"
+}
+
+STOP_WORDS = {
+    "pack", "package", "packet", "box", "boxes", "bottle", "bottles",
+    "carton", "cartons", "can", "cans", "bag", "bags", "jar", "jars",
+    "kg", "kilo", "kilos", "gram", "grams", "gm", "g", "l", "litre", "liter",
+    "piece", "pieces", "count", "علبة", "علب", "باكت", "باكيت", "كيس", "أكياس",
+    "زجاجة", "زجاجات", "كيلو", "جرام", "لتر", "قطعة", "قطع", "كرتونة"
 }
 PROFILE_PATH = Path(__file__).parent / "grocery-profile.json"
 SAMPLE_PROFILE_PATH = Path(__file__).parent / "grocery-profile.sample.json"
@@ -155,7 +172,7 @@ def tool_lookup_grocery_item(arguments: dict):
             if matched_item:
                 break
             
-    # Step 3: Fuzzy spelling matching across all tokens (difflib SequenceMatcher >= 70%)
+    # Step 3: Fuzzy spelling matching across meaningful tokens (excluding packaging/units)
     if not matched_item:
         words = re.findall(r'[\w\u0600-\u06FF]+', query_clean)
         candidates = []
@@ -174,11 +191,13 @@ def tool_lookup_grocery_item(arguments: dict):
         best_match = None
         
         for word in words:
-            if len(word) < 3:
+            if len(word) < 3 or word in STOP_WORDS:
                 continue
             for cand_term, cand_key, cand_item in candidates:
                 # Token-level similarity
                 for cand_word in cand_term.split():
+                    if cand_word in STOP_WORDS or len(cand_word) < 3:
+                        continue
                     sim = difflib.SequenceMatcher(None, word, cand_word).ratio()
                     if sim > best_ratio and sim >= 0.70:
                         best_ratio = sim
@@ -362,14 +381,22 @@ def tool_stage_in_cart(arguments: dict):
         tell front window
             execute active tab javascript "
                 (function() {{
-                    let brand = \\"{brand}\\".toLowerCase();
-                    let prodName = \\"{prod_name}\\".toLowerCase();
+                    let brand = \\"{brand}\\".toLowerCase().trim();
+                    let prodName = \\"{prod_name}\\".toLowerCase().trim();
                     let asin = \\"{asin}\\";
                     let targetQty = {qty};
                     
                     let all = Array.from(document.querySelectorAll(\\"*\\"));
-                    let match = all.find(el => el.children.length === 0 && el.innerText && 
-                        (el.innerText.toLowerCase().includes(brand) || el.innerText.toLowerCase().includes(prodName)));
+                    let match = all.find(el => {{
+                        if (el.children.length > 0 || !el.innerText) return false;
+                        let text = el.innerText.toLowerCase().trim();
+                        if (text.length < 3) return false;
+                        if (brand && text.includes(brand)) return true;
+                        if (prodName && text.includes(prodName)) return true;
+                        let prodWords = prodName.split(' ').filter(w => w.length > 3);
+                        if (prodWords.length > 0 && prodWords.every(w => text.includes(w))) return true;
+                        return false;
+                    }});
                         
                     if (!match) {{
                         return JSON.stringify({{status: \\"not_found_on_screen\\", item: \\"{brand} {prod_name}\\"}});
