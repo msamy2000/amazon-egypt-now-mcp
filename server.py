@@ -14,6 +14,100 @@ import urllib.parse
 import difflib
 from pathlib import Path
 
+# Multilingual & Franco-Arabic semantic mapping dictionary for Egyptian groceries
+ARABIC_SEMANTIC_SYNONYMS = {
+    "لبن": "milk",
+    "حليب": "milk",
+    "laban": "milk",
+    "7aleeb": "milk",
+    "haleeb": "milk",
+    
+    "رز": "rice",
+    "ارز": "rice",
+    "أرز": "rice",
+    "roz": "rice",
+    "ruz": "rice",
+    
+    "سكر": "sugar",
+    "سكرة": "sugar",
+    "sokar": "sugar",
+    "sukkar": "sugar",
+    
+    "جبنة": "cheese",
+    "جبنه": "cheese",
+    "جبن": "cheese",
+    "رومي": "cheese",
+    "رومى": "cheese",
+    "قريش": "cheese",
+    "شيدر": "cheese",
+    "لبنة": "cheese",
+    "لبنه": "cheese",
+    "gebna": "cheese",
+    "jebna": "cheese",
+    "jibna": "cheese",
+    "roumi": "cheese",
+    "romy": "cheese",
+    "romi": "cheese",
+    
+    "بيض": "eggs",
+    "بيضة": "eggs",
+    "بيضه": "eggs",
+    "bayd": "eggs",
+    "baid": "eggs",
+    "beid": "eggs",
+    
+    "شاي": "tea",
+    "شاى": "tea",
+    "shai": "tea",
+    "shay": "tea",
+    
+    "فول": "fava_beans",
+    "فول مدمس": "fava_beans",
+    "ful": "fava_beans",
+    "foul": "fava_beans",
+    
+    "ملوخية": "molokhia",
+    "ملوخيه": "molokhia",
+    "molokhia": "molokhia",
+    "molokheya": "molokhia",
+    "mulukhiyah": "molokhia",
+    
+    "مكرونة": "pasta",
+    "مكرونه": "pasta",
+    "معكرونة": "pasta",
+    "معكرونه": "pasta",
+    "لسان عصفور": "pasta",
+    "شعرية": "pasta",
+    "شعيرية": "pasta",
+    "makarona": "pasta",
+    "pasta": "pasta",
+    
+    "فاصوليا": "green_beans",
+    "فاصولياء": "green_beans",
+    "fasolia": "green_beans",
+    
+    "بسلة": "peas_carrots",
+    "بسله": "peas_carrots",
+    "بازلاء": "peas_carrots",
+    "besella": "peas_carrots",
+    "basella": "peas_carrots",
+    
+    "مناديل": "toilet_paper",
+    "ورق تواليت": "toilet_paper",
+    "manadeel": "toilet_paper",
+    
+    "زبادي": "yoghurt",
+    "زبادى": "yoghurt",
+    "zabadi": "yoghurt",
+    "yogurt": "yoghurt",
+    "yoghurt": "yoghurt",
+    
+    "زيت": "oil",
+    "زيت ذرة": "oil",
+    "زيت ذره": "oil",
+    "zayt": "oil",
+    "zeit": "oil"
+}
 PROFILE_PATH = Path(__file__).parent / "grocery-profile.json"
 SAMPLE_PROFILE_PATH = Path(__file__).parent / "grocery-profile.sample.json"
 
@@ -37,21 +131,31 @@ def tool_lookup_grocery_item(arguments: dict):
     matched_key = None
     matched_item = None
     
-    # 1. Exact or substring match across keys and generic keywords
-    for key, item in profile.get("items", {}).items():
-        if key in query_clean:
-            matched_key = key
-            matched_item = item
-            break
-        for kw in item.get("generic_keywords", []):
-            if kw.lower() in query_clean:
+    # Step 1: Semantic & Cross-Lingual Translation Analysis
+    # Checks Arabic, English, and Franco-Arabic keywords in dictionary
+    for synonym, target_category in ARABIC_SEMANTIC_SYNONYMS.items():
+        if synonym in query_clean:
+            if target_category in profile.get("items", {}):
+                matched_key = target_category
+                matched_item = profile["items"][target_category]
+                break
+
+    # Step 2: Exact or substring match across keys and generic keywords
+    if not matched_item:
+        for key, item in profile.get("items", {}).items():
+            if key in query_clean:
                 matched_key = key
                 matched_item = item
                 break
-        if matched_item:
-            break
+            for kw in item.get("generic_keywords", []):
+                if kw.lower() in query_clean:
+                    matched_key = key
+                    matched_item = item
+                    break
+            if matched_item:
+                break
             
-    # 2. Fuzzy spelling matching (e.g. 'romy' vs 'roumi', 'molokhia' vs 'mulukhiyah')
+    # Step 3: Fuzzy spelling matching across all tokens (difflib SequenceMatcher >= 70%)
     if not matched_item:
         words = re.findall(r'[\w\u0600-\u06FF]+', query_clean)
         candidates = []

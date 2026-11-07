@@ -33,6 +33,13 @@ Whenever interacting with grocery shopping, cart staging, and Amazon Egypt Now:
 - Always prioritize items, brands, and pack sizes documented in KNOWN_PRODUCTS.md and grocery-profile.json.
 - Whenever a generic grocery item is requested (e.g., "milk", "rice", "tea", "sugar", "pasta", "eggs"), automatically map it to the top-priority brand learned from the user's past purchases unless the user explicitly requests another brand.
 
+## 8. Bilingual Semantic & Cognitive Resolution (Arabic & English)
+- The user's input can be in **Arabic, English, Franco-Arabic (Arabizi), or a bilingual mixture** (e.g. "جبنة رومي", "romy cheese", "roz", "ruz", "sukkar", "laban", "shai", "foul", "makarona").
+- Before concluding that an item is unknown or a "first-time order", you MUST perform **semantic translation, transliteration matching, and cognitive reasoning**:
+  1. Translate the Arabic concept to its English grocery category (e.g. *أرز* ➔ Rice ➔ Al Doha Egyptian Rice; *سكر* ➔ Sugar ➔ Aldoha White Sugar; *جبن/جبنة* ➔ Cheese; *حليب/لبن* ➔ Milk ➔ Lamar Full Fat Milk).
+  2. Handle colloquial Egyptian Arabic terms and dialect variants (e.g. *فول* ➔ Harvest Fava Beans; *ملوخية* ➔ Basma Molokhia; *بيض* ➔ Big Egg; *شاي* ➔ El Arosa Tea; *مكرونة* ➔ Elmatbakh Elmasry Pasta).
+  3. Only if cognitive/semantic analysis yields no match across all known categories, brands, and alternates should you treat it as an uncataloged item and search Amazon Now directly.
+
 ## 6. Strict Human-in-the-Loop Checkout Barrier
 - **NEVER execute the "Proceed to Checkout", "Place Order", or "Buy Now" step autonomously.**
 - The final checkout review, payment authorization, and order placement must always be performed by the human user.
