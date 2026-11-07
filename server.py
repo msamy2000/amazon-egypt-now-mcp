@@ -258,10 +258,27 @@ def tool_record_order_event(arguments: dict):
 def tool_stage_in_cart(arguments: dict):
     """
     Directly stages an item into the user's active Google Chrome session on Amazon Egypt Now.
+    Enforces Rule 1: Must specify address ('home' or 'mom') or requires confirmation first.
     """
     query = arguments.get("query", "").strip()
     quantity = arguments.get("quantity", 1)
+    address = arguments.get("address", "").strip().lower()
     
+    profile = _load_profile()
+    addresses = profile.get("addresses", {})
+    
+    # ENFORCE RULE 1: If address is not specified, block staging and demand address confirmation!
+    if not address or address not in ["home", "mom", "22", "26"]:
+        return {
+            "status": "requires_address_confirmation",
+            "message": "RULE 1 ENFORCED: You MUST ask the user which delivery address to select before staging items in the cart.",
+            "options": {
+                "home": "My Home (Building number 22)",
+                "mom": "Mom's House (Building number 26)"
+            },
+            "prompt_user": "Please select the delivery address: 1) My Home (Building 22) or 2) Mom's House (Building 26)?"
+        }
+        
     # 1. Resolve query first
     lookup_res = tool_lookup_grocery_item({"query": query})
     if lookup_res.get("status") != "resolved":
@@ -275,6 +292,8 @@ def tool_stage_in_cart(arguments: dict):
     prod_name = primary.get("product_name", "")
     asin = primary.get("asin", "")
     qty = quantity or lookup_res.get("quantity", 1)
+    
+    selected_addr = "Mom's House (Building 26)" if ("mom" in address or "26" in address) else "My Home (Building 22)"
     
     # 2. Drive the active Chrome browser via AppleScript
     apple_script = f'''
@@ -334,6 +353,7 @@ def tool_stage_in_cart(arguments: dict):
     return {
         "status": "success",
         "action": "staged_in_cart",
+        "delivery_address": selected_addr,
         "resolved_product": f"{qty}x {brand} {prod_name}",
         "browser_execution": parsed
     }
@@ -363,14 +383,15 @@ TOOLS = [
     },
     {
         "name": "stage_in_cart",
-        "description": "Directly drives the user's active Google Chrome session to click 'Add to Cart' or increment quantity for the resolved item on Amazon Egypt Now.",
+        "description": "Stages an item into the user's active Google Chrome session on Amazon Egypt Now. MANDATORY: You must provide the confirmed delivery address ('home' for Building 22 or 'mom' for Building 26). If the user has not confirmed the address yet, omit the parameter or pass empty to trigger the address selection prompt.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Grocery item name in English or Arabic, e.g. 'sugar', 'milk', 'جبنة رومي'"},
-                "quantity": {"type": "integer", "description": "Quantity to add", "default": 1}
+                "quantity": {"type": "integer", "description": "Quantity to add", "default": 1},
+                "address": {"type": "string", "description": "Delivery address destination: 'home' (Building 22) or 'mom' (Building 26)", "enum": ["home", "mom", "22", "26"]}
             },
-            "required": ["query"]
+            "required": ["query", "address"]
         }
     },
     {
