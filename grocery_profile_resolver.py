@@ -11,6 +11,7 @@ import json
 import os
 import re
 import urllib.parse
+import difflib
 from pathlib import Path
 
 PROFILE_PATH = Path(__file__).parent / "grocery-profile.json"
@@ -35,18 +36,49 @@ def lookup_preferred_item(query: str):
     matched_key = None
     matched_item = None
     
-    for key, item in profile["items"].items():
+    # 1. Exact or substring match
+    for key, item in profile.get("items", {}).items():
         if key in query_clean:
             matched_key = key
             matched_item = item
             break
         for kw in item.get("generic_keywords", []):
-            if kw in query_clean:
+            if kw.lower() in query_clean:
                 matched_key = key
                 matched_item = item
                 break
         if matched_item:
             break
+            
+    # 2. Fuzzy spelling matching (difflib SequenceMatcher >= 70%)
+    if not matched_item:
+        words = re.findall(r'[\w\u0600-\u06FF]+', query_clean)
+        candidates = []
+        for key, item in profile.get("items", {}).items():
+            candidates.append((key, key, item))
+            for kw in item.get("generic_keywords", []):
+                candidates.append((kw.lower(), key, item))
+            p = item.get("primary", {})
+            if "product_name" in p:
+                candidates.append((p["product_name"].lower(), key, item))
+            if "brand" in p:
+                candidates.append((p["brand"].lower(), key, item))
+                
+        best_ratio = 0.0
+        best_match = None
+        
+        for word in words:
+            if len(word) < 3:
+                continue
+            for cand_term, cand_key, cand_item in candidates:
+                for cand_word in cand_term.split():
+                    sim = difflib.SequenceMatcher(None, word, cand_word).ratio()
+                    if sim > best_ratio and sim >= 0.70:
+                        best_ratio = sim
+                        best_match = (cand_key, cand_item)
+                        
+        if best_match:
+            matched_key, matched_item = best_match
             
     if not matched_item:
         return {
